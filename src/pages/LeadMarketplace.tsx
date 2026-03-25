@@ -76,6 +76,10 @@ export default function LeadMarketplace() {
   const PAGE_SIZE = 18;
   const navigate = useNavigate();
   const { user } = useAuth();
+  // Cache for leads - significantly speeds up repeat visits
+  const leadsCache = useRef<{ data: Lead[]; timestamp: number } | null>(null);
+  const CACHE_DURATION = 15000; // 15 seconds cache for marketplace
+  
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -103,6 +107,15 @@ export default function LeadMarketplace() {
   }, [user?.id]);
 
   const fetchLeads = async (reset = false) => {
+    // Check cache on first load (reset=true)
+    if (reset && leadsCache.current && 
+        Date.now() - leadsCache.current.timestamp < CACHE_DURATION) {
+      setLeads(leadsCache.current.data);
+      setLoading(false);
+      setHasMore(true);
+      return;
+    }
+
     if (isFetchingRef.current) return;
     if (!reset && (loadingMore || !hasMore)) return;
     isFetchingRef.current = true;
@@ -123,7 +136,7 @@ export default function LeadMarketplace() {
       const { data, error } = await supabase
         .from("leads")
         .select(
-          "id, title, description, category, company_name, budget, status, created_at"
+          "id, title, description, category, company_name, budget, created_at"
         )
         .eq("status", "available")
         .range(from, to)
@@ -136,7 +149,11 @@ export default function LeadMarketplace() {
 
       const batch = data || [];
       setLeads((prev) => {
-        if (reset) return batch;
+        if (reset) {
+          // Update cache with new data
+          leadsCache.current = { data: batch, timestamp: Date.now() };
+          return batch;
+        }
         return [...prev, ...batch];
       });
       setHasMore(batch.length === PAGE_SIZE);

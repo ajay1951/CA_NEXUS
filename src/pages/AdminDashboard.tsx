@@ -92,11 +92,11 @@ export default function AdminDashboard() {
     try {
       const { count: userCount } = await supabase
         .from("profiles")
-        .select("*", { count: "exact", head: true });
+        .select("id", { count: "exact", head: true });
 
       const { count: leadCount } = await supabase
         .from("leads")
-        .select("*", { count: "exact", head: true });
+        .select("id", { count: "exact", head: true });
 
       const { data: completedPurchases } = await supabase
         .from("purchased_leads")

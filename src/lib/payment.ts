@@ -64,7 +64,7 @@ async function generateInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear();
   const { count } = await supabase
     .from('invoices')
-    .select('*', { count: 'exact', head: true });
+    .select('id', { count: 'exact', head: true });
   
   const sequence = (count || 0) + 1;
   return `CANEXUS-${year}-${sequence.toString().padStart(5, '0')}`;

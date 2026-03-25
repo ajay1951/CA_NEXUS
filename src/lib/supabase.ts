@@ -13,11 +13,21 @@ if (!supabaseAnonKey) {
   throw new Error("VITE_SUPABASE_ANON_KEY is missing in .env file");
 }
 
-// 🚀 Create Supabase client
+// 🚀 Create Supabase client with performance optimizations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+  },
+  // Performance optimizations
+  global: {
+    headers: {
+      'Prefer': 'return=representation',
+    },
+  },
+  // Enable connection pooler for faster connections
+  db: {
+    schema: 'public',
   },
 });

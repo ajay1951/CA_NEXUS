@@ -57,6 +57,10 @@ export default function AdminLeads() {
     budget: 0,
   });
 
+  // Cache for leads data - persists during session
+  const leadsCache = useRef<{ data: any[]; timestamp: number } | null>(null);
+  const CACHE_DURATION = 30000; // 30 seconds cache
+
   useEffect(() => {
     if (isAdmin) {
       fetchLeads();
@@ -64,14 +68,25 @@ export default function AdminLeads() {
   }, [isAdmin]);
 
   const fetchLeads = async () => {
+    // Check cache first
+    if (leadsCache.current && 
+        Date.now() - leadsCache.current.timestamp < CACHE_DURATION) {
+      setLeads(leadsCache.current.data);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from("leads")
-        .select("*")
+        .select("id, title, description, category, company_name, budget, status, created_by, assigned_to, created_at, updated_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setLeads(data || []);
+      const leadsData = data || [];
+      setLeads(leadsData);
+      // Update cache
+      leadsCache.current = { data: leadsData, timestamp: Date.now() };
     } catch (error) {
       console.error("Error fetching leads:", error);
     } finally {
